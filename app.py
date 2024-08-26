@@ -1,8 +1,15 @@
-import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-import numpy as np
+import streamlit as st
+
+from qualitative_analysis import (
+    load_qualitative_data,
+    plot_coverage_analysis,
+    plot_entity_counts,
+    plot_leaders_mentions,
+    plot_sentiment_shift,
+)
+
 
 # Load the data
 @st.cache_data
@@ -109,6 +116,7 @@ selected_outlets = st.sidebar.multiselect(
     "Select specific outlets", outlets, default=outlets
 )
 
+
 def update_dashboard():
     # Apply filters
     filtered_df = merged_df[
@@ -134,15 +142,19 @@ def update_dashboard():
     st.header("Visualizations")
 
     filtered_monthly_coverage = monthly_coverage[selected_conflicts]
-    filtered_outlet_coverage = outlet_coverage[outlet_coverage.index.isin(selected_outlets)]
-    filtered_country_coverage = country_coverage[country_coverage.index.isin(selected_countries)]
+    filtered_outlet_coverage = outlet_coverage[
+        outlet_coverage.index.isin(selected_outlets)
+    ]
+    filtered_country_coverage = country_coverage[
+        country_coverage.index.isin(selected_countries)
+    ]
 
     st.plotly_chart(plot_overall_coverage(filtered_df))
     st.plotly_chart(plot_monthly_coverage(filtered_monthly_coverage))
     st.plotly_chart(plot_outlet_coverage(filtered_outlet_coverage))
     st.plotly_chart(plot_country_coverage(filtered_country_coverage))
 
-    filtered_coverage_volatility =  coverage_volatility[
+    filtered_coverage_volatility = coverage_volatility[
         coverage_volatility.index.isin(selected_conflicts)
     ]
     filtered_coverage_trend = coverage_trend[
@@ -154,15 +166,21 @@ def update_dashboard():
     filtered_coverage_consistency = coverage_consistency[
         coverage_consistency.index.isin(selected_conflicts)
     ]
-    filtered_seasonal_coverage_percentage  = seasonal_coverage_percentage[selected_conflicts]
-    filtered_dow_coverage_percentage = dow_coverage_percentage[selected_conflicts]
-    filtered_outlet_gini = outlet_gini[
-        outlet_gini.index.isin(selected_conflicts)
+    filtered_seasonal_coverage_percentage = seasonal_coverage_percentage[
+        selected_conflicts
     ]
+    filtered_dow_coverage_percentage = dow_coverage_percentage[selected_conflicts]
+    filtered_outlet_gini = outlet_gini[outlet_gini.index.isin(selected_conflicts)]
 
     # Update these functions to use filtered_df
-    st.plotly_chart(plot_volatility_trend(filtered_coverage_volatility, filtered_coverage_trend))
-    st.plotly_chart(plot_intensity_consistency(filtered_coverage_intensity, filtered_coverage_consistency))
+    st.plotly_chart(
+        plot_volatility_trend(filtered_coverage_volatility, filtered_coverage_trend)
+    )
+    st.plotly_chart(
+        plot_intensity_consistency(
+            filtered_coverage_intensity, filtered_coverage_consistency
+        )
+    )
     st.plotly_chart(plot_seasonal_coverage(filtered_seasonal_coverage_percentage))
     st.plotly_chart(plot_dow_coverage(filtered_dow_coverage_percentage))
     st.plotly_chart(plot_outlet_gini(filtered_outlet_gini))
@@ -225,6 +243,7 @@ def plot_outlet_coverage(outlet_coverage):
     fig.update_xaxes(side="top")
     return fig
 
+
 # Coverage by country
 def plot_country_coverage(country_coverage):
     country_coverage_percentage = (
@@ -250,30 +269,49 @@ def plot_country_coverage(country_coverage):
     fig.update_layout(xaxis_tickangle=-45)
     return fig
 
+
 def plot_volatility_trend(coverage_volatility, coverage_trend):
-    df = pd.merge(coverage_volatility, coverage_trend, left_index=True, right_index=True)
-    df.columns = ['volatility', 'trend']
-    df['conflict'] = df.index
-    
-    fig = px.scatter(df, x='volatility', y='trend', text='conflict',
-                     title='Conflict Coverage Volatility vs Trend',
-                     labels={'volatility': 'Volatility', 'trend': 'Trend'},
-                     hover_data=['conflict'])
-    fig.update_traces(textposition='top center')
+    df = pd.merge(
+        coverage_volatility, coverage_trend, left_index=True, right_index=True
+    )
+    df.columns = ["volatility", "trend"]
+    df["conflict"] = df.index
+
+    fig = px.scatter(
+        df,
+        x="volatility",
+        y="trend",
+        text="conflict",
+        title="Conflict Coverage Volatility vs Trend",
+        labels={"volatility": "Volatility", "trend": "Trend"},
+        hover_data=["conflict"],
+    )
+    fig.update_traces(textposition="top center")
     return fig
 
 
 def plot_intensity_consistency(coverage_intensity, coverage_consistency):
-    df = pd.merge(coverage_intensity, coverage_consistency, left_index=True, right_index=True)
-    df.columns = ['intensity', 'consistency']
-    df['conflict'] = df.index
-    
-    fig = px.scatter(df, x='intensity', y='consistency', text='conflict',
-                     title='Conflict Coverage Intensity vs Consistency',
-                     labels={'intensity': 'Average Articles per Day', 'consistency': 'Percentage of Days with Coverage'},
-                     hover_data=['conflict'])
-    fig.update_traces(textposition='top center')
+    df = pd.merge(
+        coverage_intensity, coverage_consistency, left_index=True, right_index=True
+    )
+    df.columns = ["intensity", "consistency"]
+    df["conflict"] = df.index
+
+    fig = px.scatter(
+        df,
+        x="intensity",
+        y="consistency",
+        text="conflict",
+        title="Conflict Coverage Intensity vs Consistency",
+        labels={
+            "intensity": "Average Articles per Day",
+            "consistency": "Percentage of Days with Coverage",
+        },
+        hover_data=["conflict"],
+    )
+    fig.update_traces(textposition="top center")
     return fig
+
 
 def plot_seasonal_coverage(seasonal_coverage_percentage):
 
@@ -299,32 +337,83 @@ def plot_dow_coverage(dow_coverage_percentage):
     fig.update_xaxes(side="top")
     return fig
 
+
 def plot_outlet_gini(outlet_gini):
     # Reset the index to turn conflict_name into a column
     plot_df = outlet_gini.reset_index()
-    
+
     # Rename columns for clarity
-    plot_df.columns = ['conflict_name', 'gini_coefficient']
-    
+    plot_df.columns = ["conflict_name", "gini_coefficient"]
+
     fig = px.bar(
         plot_df,
-        x='conflict_name',
-        y='gini_coefficient',
-        title='Outlet Gini Coefficient by Conflict',
-        labels={'conflict_name': 'Conflict', 'gini_coefficient': 'Gini Coefficient'},
-        color='conflict_name'
+        x="conflict_name",
+        y="gini_coefficient",
+        title="Outlet Gini Coefficient by Conflict",
+        labels={"conflict_name": "Conflict", "gini_coefficient": "Gini Coefficient"},
+        color="conflict_name",
     )
     fig.update_layout(showlegend=False, xaxis_tickangle=-45)
     return fig
+
+
 if __name__ == "__main__":
     # Main content
     st.title("PPB Humanitarian News Coverage Analysis PoC")
-    tab1, tab2 = st.tabs(["Analysis", "Documentation"])
+    tab1, tab2, tab3 = st.tabs(
+        ["Quantitative Analysis", "Qualitative Analysis", "Documentation"]
+    )
 
     with tab1:
         update_dashboard()
 
     with tab2:
+        st.header("Qualitative Analysis")
+
+        (
+            sentiment_shift,
+            entity_counts,
+            coverage_analysis,
+            leaders_mentions,
+        ) = load_qualitative_data()
+
+        # Get the filtered parameters from your UI
+        selected_outlets = st.session_state.get('selected_outlets', outlets)
+        selected_conflicts = ["Russian Invasion of Ukraine", "Israel-Palestine Conflict"]
+        date_range = st.session_state.get('date_range', [sentiment_shift['month'].min(), sentiment_shift['month'].max()])
+
+        st.subheader("Sentiment Analysis")
+        st.write(
+            "Research Question: How does the normalized sentiment of news coverage change over time for different conflicts?"
+        )
+        st.plotly_chart(plot_sentiment_shift(sentiment_shift, selected_outlets, selected_conflicts, date_range))
+
+        st.subheader("Entity Analysis")
+        st.write(
+            "Research Question: Who are the most frequently mentioned entities in each conflict (normalized)?"
+        )
+        st.plotly_chart(plot_entity_counts(entity_counts, selected_outlets, selected_conflicts, date_range))
+
+        st.subheader("Coverage Analysis")
+        st.write(
+            "Research Question: How does the normalized coverage of death reporting and human rights violations compare between conflicts over time?"
+        )
+        st.plotly_chart(plot_coverage_analysis(coverage_analysis, selected_outlets, selected_conflicts, date_range))
+
+        st.subheader("Leaders Mentions")
+        st.write(
+            "Research Question: How often are different leaders mentioned in various contexts across conflicts (normalized)?"
+        )
+        st.plotly_chart(plot_leaders_mentions(leaders_mentions, selected_outlets, selected_conflicts, date_range))
+
+
+        # st.subheader("Co-occurrence Analysis")
+        # st.write(
+        #     "Research Question: How do co-occurrences of key terms change over time for different conflicts and outlets?"
+        # )
+        # st.plotly_chart(plot_co_occurrence(co_occurrence))
+
+    with tab3:
         st.header("Documentation")
         with open("doc.md", "r") as f:
             st.markdown(f.read())
